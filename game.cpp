@@ -19,7 +19,7 @@ static void on_mouse(int button, int state, int x, int y);
 static void on_motion(int x, int y);
 
 void pocetneVrednosti();
-void crtanje_postolja(void);
+void nacrtajPostolje(void);
 void nacrtajElipsu(double centerX, double centerY, double radiusX, double radiusY);
 void nacrtajOblak();
 void nacrtajTop();
@@ -51,10 +51,9 @@ int main(int argc, char** argv){
     glutReshapeFunc(on_reshape);
     glutDisplayFunc(on_display);
 
-    pocetneVrednosti();
     
     /* Obavlja se OpenGL inicijalizacija. */
-    glClearColor(0.74902, 0.847059, 0.847059, 0);
+    glClearColor(0.75, 0.85, 0.85, 0);
     glEnable(GL_DEPTH_TEST);
     
     /* Program ulazi u glavnu petlju. */
@@ -66,11 +65,10 @@ int main(int argc, char** argv){
 void pocetneVrednosti(){
     pomerajPoX = 0.0;
     srand(time(NULL));
-    for(int i = 0; i<1000; i++){
+    for(int i = 0; i<100; i++){
         
         yKoordinateOblaka.at(i) = 0.7 + i;
         double xKoordinata = rand()/(float)RAND_MAX;
-        std::cout<< xKoordinata << std::endl;
     
         double randomBroj = rand()/(float)RAND_MAX;
         if(randomBroj < 0.5){
@@ -78,7 +76,6 @@ void pocetneVrednosti(){
         } else {
             xKoordinateOblaka.at(i) = xKoordinata;
         }
-        std::cout<< xKoordinateOblaka.at(i) << std::endl;
     }
     
     /*inicijalizacija matrice rotacije*/
@@ -96,11 +93,10 @@ static void on_mouse(int button, int state, int x, int y){
 static void on_motion(int x, int y){
     /*promene pozicije misa, izracunavanje te promene
      i cuvanje novih pozicija*/
-    int deltaX, deltaY;
+    int deltaX;
     
     deltaX = x - mouse_x;
-    deltaY = y - mouse_y;
-    
+
     mouse_x = x;
     mouse_y = y;
     
@@ -141,7 +137,7 @@ static void on_display(void){
     /* Podesava se projekcija. */
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(30, (float) window_width / window_height, 1, 1000);
+    gluPerspective(30, (float) window_width / window_height, 1, 100);
     
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
@@ -151,38 +147,39 @@ static void on_display(void){
     
     glEnable(GL_DEPTH_TEST);
     nacrtajOblak();
-    crtanje_postolja();
-    
+    nacrtajPostolje();
     glMultMatrixf(matrix);
     nacrtajTop();
     glutSwapBuffers();
 }
 
 
-void crtanje_postolja(){
+
+void nacrtajPostolje(){
     glDisable(GL_LIGHTING);
-    GLfloat pozicija_svetla[] = { 1, 10, 7, 1 };
+    GLfloat pozicija_osvetljenja[] = { 1, 10, 7, 1 };
 
-    GLfloat ambijentalno_svetlo[] = { 0.35, 0.35, 0.35, 1 };
-
-    GLfloat difuzno_svetlo[] = { 0.75, 0.75, 0.75, 1 };
-    GLfloat spekularno_svetlo[] = { 0.9, 0.9, 0.9, 1 };
-    GLfloat ambijentalna_refleksija[] = { 0.0, 1.0, 0.0, 1 };
-    GLfloat difuzna_refleksija[] = { 0.0, 0.6, 0.0, 1 };
-    GLfloat spekularna_refleksija[] = { 1, 1, 1, 1 };
+    GLfloat ambijentalno_osvetljenje[] = { 0.35, 0.35, 0.35, 1 };
+    GLfloat difuzno_osvetljenje[] = { 0.75, 0.75, 0.75, 1 };
+    GLfloat spekularno_osvetljenje[] = { 0.9, 0.9, 0.9, 1 };
+    
+    
+    GLfloat ambijentalni_materijal[] = { 0.0, 1.0, 0.0, 1 };
+    GLfloat difuzni_materijal[] = { 0.0, 0.6, 0.0, 1 };
+    GLfloat spekularni_materijal[] = { 1, 1, 1, 1 };
     GLfloat shininess = 40;
 
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
-    glLightfv(GL_LIGHT0, GL_POSITION, pozicija_svetla);
-    glLightfv(GL_LIGHT0, GL_AMBIENT, ambijentalno_svetlo);
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, difuzno_svetlo);
-    glLightfv(GL_LIGHT0, GL_SPECULAR, spekularno_svetlo);
+    glLightfv(GL_LIGHT0, GL_POSITION, pozicija_osvetljenja);
+    glLightfv(GL_LIGHT0, GL_AMBIENT, ambijentalno_osvetljenje);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, difuzno_osvetljenje);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, spekularno_osvetljenje);
 
     /* Podesavaju se parametri materijala. */
-    glMaterialfv(GL_FRONT, GL_AMBIENT, ambijentalna_refleksija);
-    glMaterialfv(GL_FRONT, GL_DIFFUSE, difuzna_refleksija);
-    glMaterialfv(GL_FRONT, GL_SPECULAR, spekularna_refleksija);
+    glMaterialfv(GL_FRONT, GL_AMBIENT, ambijentalni_materijal);
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, difuzni_materijal);
+    glMaterialfv(GL_FRONT, GL_SPECULAR, spekularni_materijal);
     glMaterialf(GL_FRONT, GL_SHININESS, shininess);
 
     glPushMatrix();
@@ -212,7 +209,7 @@ void nacrtajOblak(){
     
     glDisable(GL_LIGHTING);
 
-    for(int i = 0; i<1000; i++){
+    for(int i = 0; i<100; i++){
         double x = xKoordinateOblaka.at(i);
         double y = yKoordinateOblaka.at(i);
         glColor3f(255.0, 255.0, 255.0);
@@ -230,30 +227,30 @@ void nacrtajOblak(){
 
 void nacrtajTop(){
     glDisable(GL_LIGHTING);
-    GLfloat pozicija_svetla[] = { 1, 10, 7, 1 };
+    GLfloat pozicija_osvetljenja[] = { 1, 10, 7, 1 };
 
-    GLfloat ambijentalno_svetlo[] = { 0.35, 0.35, 0.35, 1 };
-
-    GLfloat difuzno_svetlo[] = { 0.75, 0.75, 0.75, 1 };
-    GLfloat spekularno_svetlo[] = { 0.9, 0.9, 0.9, 1 };
-    GLfloat ambijentalna_refleksija[] = { 0.5, 0.5, 0.5, 1 };
-    GLfloat difuzna_refleksija[] = { 0.6, 0.6, 0.6, 1 };
-    GLfloat spekularna_refleksija[] = { 1, 1, 1, 1 };
+    GLfloat ambijentalno_osvetljenje[] = { 0.35, 0.35, 0.35, 1 };
+    GLfloat difuzno_osvetljenje[] = { 0.75, 0.75, 0.75, 1 };
+    GLfloat spekularno_osvetljenje[] = { 0.9, 0.9, 0.9, 1 };
+    
+    
+    GLfloat ambijentalni_materijal[] = { 0.5, 0.5, 0.5, 1 };
+    GLfloat difuzni_materijal[] = { 0.6, 0.6, 0.6, 1 };
+    GLfloat spekularni_materijal[] = { 1, 1, 1, 1 };
     GLfloat shininess = 40;
 
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
-    glLightfv(GL_LIGHT0, GL_POSITION, pozicija_svetla);
-    glLightfv(GL_LIGHT0, GL_AMBIENT, ambijentalno_svetlo);
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, difuzno_svetlo);
-    glLightfv(GL_LIGHT0, GL_SPECULAR, spekularno_svetlo);
+    glLightfv(GL_LIGHT0, GL_POSITION, pozicija_osvetljenja);
+    glLightfv(GL_LIGHT0, GL_AMBIENT, ambijentalno_osvetljenje);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, difuzno_osvetljenje);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, spekularno_osvetljenje);
 
     /* Podesavaju se parametri materijala. */
-    glMaterialfv(GL_FRONT, GL_AMBIENT, ambijentalna_refleksija);
-    glMaterialfv(GL_FRONT, GL_DIFFUSE, difuzna_refleksija);
-    glMaterialfv(GL_FRONT, GL_SPECULAR, spekularna_refleksija);
+    glMaterialfv(GL_FRONT, GL_AMBIENT, ambijentalni_materijal);
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, difuzni_materijal);
+    glMaterialfv(GL_FRONT, GL_SPECULAR, spekularni_materijal);
     glMaterialf(GL_FRONT, GL_SHININESS, shininess);
-
     glPushMatrix();
         GLUquadricObj *quadratic;
         quadratic = gluNewQuadric();
