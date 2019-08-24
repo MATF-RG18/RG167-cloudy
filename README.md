@@ -19,6 +19,6 @@ Komande u terminalu: 'make' i './game'
 esc- napustanje programa  
 s/S- pocetak igre  
 p/P- pucanj  
-r/R- restart
+r/R- restart  
 Misem pozicionirajte top  
 
