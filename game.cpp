@@ -330,6 +330,7 @@ static void pomeranjeMetaka(int value){
                         brojPogodjenih -= 1;
                     }
                     xKoordinateOblaka.at(j) = -1000;   
+                    yKoordinateOblaka.at(i) = 100;
                 }
             }
         }
