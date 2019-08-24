@@ -13,6 +13,7 @@
 #define TIMER_ID 0
 #define TIMER_ID1 1
 #define TIMER_INTERVAL 20
+#define MAKSIMALAN_BROJ_KARAKTERA 256
 
 static void on_keyboard(unsigned char key, int x, int y);
 static void on_reshape(int width, int height);
@@ -27,20 +28,22 @@ void nacrtajElipsu(double centerX, double centerY, double radiusX, double radius
 void nacrtajOblak();
 void nacrtajTop();
 void nacrtajMuniciju();
+void dodajTekst();
 
 static int window_width, window_height;
 static std::vector<double> xKoordinateOblaka(1000), yKoordinateOblaka(1000);
 static std::vector<double> brzinaOblakaPoX(1000), brzinaOblakaPoY(1000);
 static std::vector<int> bojaOblaka(1000);
-static std::vector<int> metkovi(1000);
 static std::vector<double> yKoordinataMunicije(1000), zKoordinataMunicije(1000);
 static int brojacMetkova;
+static int brojPogodjenih;
 static double pocetnaXMunicije, pocetnaYMunicije, pocetnaZMunicije;
 static int kretanjeOblaka;
 static int mouse_x, mouse_y; /* Koordinate misa. */
 static float matrix[16];/*kumulativna matrica rotacije*/
 static double pomerajPoX, rotacijaUgla;
 static int pritisnutoPucanje, drugiPut;
+static bool prikazi_municiju = false;
 
 int main(int argc, char** argv){
     
@@ -78,7 +81,7 @@ void pocetneVrednosti(){
     pritisnutoPucanje = 0;
     drugiPut = 0;
     brojacMetkova = 0;
-    
+    brojPogodjenih = 0;
     double pocetnaBrzinaPoX = 0.03;
     double pocetnaBrzinaPoY = 0.003;
     
@@ -114,7 +117,7 @@ void pocetneVrednosti(){
         else
             bojaOblaka.at(i) = 0;
         
-        metkovi.at(i) = 0;
+        
         yKoordinataMunicije.at(i) = pocetnaYMunicije;
         zKoordinataMunicije.at(i) = pocetnaZMunicije;
     
@@ -186,11 +189,18 @@ static void on_keyboard(unsigned char key, int x, int y){
         break;
     case 'p':
     case 'P':
-        pocetnaXMunicije = pomerajPoX;
-        brojacMetkova += 1;
-        pritisnutoPucanje = 1;
-        glutTimerFunc(TIMER_INTERVAL, pomeranjeMetaka, TIMER_ID1);
-        break;
+        
+        if(brojacMetkova<1){
+            pocetnaXMunicije = pomerajPoX;
+            
+            brojacMetkova += 1;
+        
+            pritisnutoPucanje = 1;
+            prikazi_municiju=true;
+            glutTimerFunc(TIMER_INTERVAL, pomeranjeMetaka, TIMER_ID1);
+            
+            break;
+        }
     }
 
 }
@@ -220,6 +230,7 @@ static void on_display(void){
     glMultMatrixf(matrix);
     nacrtajTop();
     nacrtajMuniciju();
+    dodajTekst();
     glutSwapBuffers();
 }
 
@@ -246,18 +257,47 @@ static void pomeranjeMetaka(int value){
 
     if (value != TIMER_ID1)
         return;
-    metkovi.at(brojacMetkova-1) = 1;
-    for(int i = 0; i<brojacMetkova - 1; i++)
-        metkovi.at(i) = 0;
+   
+    
     for(int i = 0; i<brojacMetkova; i++){
         
-        yKoordinataMunicije.at(i) += 0.05;
-        zKoordinataMunicije.at(i) -= 0.05;
-    }
+        if(yKoordinataMunicije.at(i)<2 ){
+            yKoordinataMunicije.at(i) += 0.06/brojacMetkova ;
+            zKoordinataMunicije.at(i) -= 0.05/brojacMetkova ;
+            for(int j = 0; j<100; j++){
+                if(yKoordinataMunicije.at(i) <= yKoordinateOblaka.at(j) + 0.15 &&
+                   yKoordinataMunicije.at(i) >= yKoordinateOblaka.at(j) - 0.15 &&
+                   pocetnaXMunicije <= xKoordinateOblaka.at(j) + 0.25 &&
+                   pocetnaXMunicije >= xKoordinateOblaka.at(j) - 0.25 &&
+                   zKoordinataMunicije.at(i) <= 0.5){
+                    if(!bojaOblaka.at(j)){
+                        brojPogodjenih += 1;
+                        
+                    }
+                    else {
+                        brojPogodjenih -= 1;
+                    }
+                    yKoordinateOblaka.at(j) = -1000;   
+                }
+            }
+        }
+        
+        else{
+            glutTimerFunc(TIMER_INTERVAL, pomeranjeMetaka, TIMER_ID);
+
+            yKoordinataMunicije.at(i) = pocetnaYMunicije;
+            zKoordinataMunicije.at(i) = pocetnaZMunicije;
+            prikazi_municiju=false;
+            nacrtajMuniciju();
+            brojacMetkova--;
+
+        }
+
+    } 
     glutPostRedisplay();
 
-    if (metkovi.at(brojacMetkova-1) ) {
-        glutTimerFunc(TIMER_INTERVAL*brojacMetkova, pomeranjeMetaka, TIMER_ID1);
+    if (brojacMetkova>0)  {
+        glutTimerFunc(TIMER_INTERVAL, pomeranjeMetaka, TIMER_ID1);
     }
 }
 
@@ -383,40 +423,79 @@ void nacrtajTop(){
 
 
 void nacrtajMuniciju(){
-    glDisable(GL_LIGHTING);
-    GLfloat pozicija_osvetljenja[] = { 1, 10, 8, 1 };
+    
+    if(prikazi_municiju==true){
+        glDisable(GL_LIGHTING);
+        GLfloat pozicija_osvetljenja[] = { 1, 10, 8, 1 };
 
-    GLfloat ambijentalno_osvetljenje[] = { 0.35, 0.35, 0.35, 1 };
-    GLfloat difuzno_osvetljenje[] = { 0.75, 0.75, 0.75, 1 };
-    GLfloat spekularno_osvetljenje[] = { 0.9, 0.9, 0.9, 1 };
-    
-    
-    GLfloat ambijentalni_materijal[] = { 0, 0, 0, 1 };
-    GLfloat difuzni_materijal[] = { 0.1, 0.1, 0.1, 1 };
-    GLfloat spekularni_materijal[] = { 1, 1, 1, 1 };
-    GLfloat shininess = 40;
-
-    glEnable(GL_LIGHTING);
-    glEnable(GL_LIGHT0);
-    glLightfv(GL_LIGHT0, GL_POSITION, pozicija_osvetljenja);
-    glLightfv(GL_LIGHT0, GL_AMBIENT, ambijentalno_osvetljenje);
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, difuzno_osvetljenje);
-    glLightfv(GL_LIGHT0, GL_SPECULAR, spekularno_osvetljenje);
-
-    /* Podesavaju se parametri materijala. */
-    glMaterialfv(GL_FRONT, GL_AMBIENT, ambijentalni_materijal);
-    glMaterialfv(GL_FRONT, GL_DIFFUSE, difuzni_materijal);
-    glMaterialfv(GL_FRONT, GL_SPECULAR, spekularni_materijal);
-    glMaterialf(GL_FRONT, GL_SHININESS, shininess);
-    
-    
-    for(int i = 0; i<brojacMetkova; i++){
-        glPushMatrix();
-        glTranslatef(pocetnaXMunicije, yKoordinataMunicije.at(i),                      
-                    zKoordinataMunicije.at(i));
-        glutSolidSphere(0.12, 500, 500);
-        glPopMatrix();
-    }
-    
+        GLfloat ambijentalno_osvetljenje[] = { 0.35, 0.35, 0.35, 1 };
+        GLfloat difuzno_osvetljenje[] = { 0.75, 0.75, 0.75, 1 };
+        GLfloat spekularno_osvetljenje[] = { 0.9, 0.9, 0.9, 1 };
         
+        
+        GLfloat ambijentalni_materijal[] = { 0, 0, 0, 1 };
+        GLfloat difuzni_materijal[] = { 0.1, 0.1, 0.1, 1 };
+        GLfloat spekularni_materijal[] = { 1, 1, 1, 1 };
+        GLfloat shininess = 40;
+
+        glEnable(GL_LIGHTING);
+        glEnable(GL_LIGHT0);
+        glLightfv(GL_LIGHT0, GL_POSITION, pozicija_osvetljenja);
+        glLightfv(GL_LIGHT0, GL_AMBIENT, ambijentalno_osvetljenje);
+        glLightfv(GL_LIGHT0, GL_DIFFUSE, difuzno_osvetljenje);
+        glLightfv(GL_LIGHT0, GL_SPECULAR, spekularno_osvetljenje);
+
+        /* Podesavaju se parametri materijala. */
+        glMaterialfv(GL_FRONT, GL_AMBIENT, ambijentalni_materijal);
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, difuzni_materijal);
+        glMaterialfv(GL_FRONT, GL_SPECULAR, spekularni_materijal);
+        glMaterialf(GL_FRONT, GL_SHININESS, shininess);
+        
+        
+        for(int i = 0; i<brojacMetkova; i++){
+            glPushMatrix();
+            glTranslatef(pocetnaXMunicije, yKoordinataMunicije.at(i),                      
+                        zKoordinataMunicije.at(i));
+            glutSolidSphere(0.12, 500, 500);
+            glPopMatrix();
+        }
+    }
 }
+
+
+void dodajTekst(void){
+    glDisable(GL_LIGHTING);
+    
+
+    char tekstZaBrojPogodjenih[MAKSIMALAN_BROJ_KARAKTERA], *p1;
+    /*upisivanje teksta u promenljivu*/
+    sprintf(tekstZaBrojPogodjenih, "Broj pogodjenih: ");
+    
+    /*pisanje jednog po jednog teksta pomocu funkcije glutBitmapCharacter*/
+    glPushMatrix();
+        glColor3f(1, 1, 1);
+        glTranslatef(-2, -1.5, 0);
+        glRasterPos3f(0.2, 0.7, 0);
+        for(p1 = tekstZaBrojPogodjenih; *p1!= '\0'; p1++){
+            glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *p1);
+        }
+    glPopMatrix();
+    
+    char brPogodaka[MAKSIMALAN_BROJ_KARAKTERA], *p2;
+    sprintf(brPogodaka, "%d", brojPogodjenih);
+    
+    glPushMatrix();
+        glColor3f(1, 1, 1);
+        glTranslatef(-1, -1.5, 0);
+        glRasterPos3f(0.2, 0.7, 0);
+        for(p2 = brPogodaka; *p2!= '\0'; p2++){
+            glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *p2);
+        }
+    glPopMatrix();
+    
+    
+    
+}
+
+
+
